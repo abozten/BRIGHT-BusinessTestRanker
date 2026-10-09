@@ -1,0 +1,189 @@
+{
+  "python": ">=3.13,<3.14",
+  "scope": "Method settings; algorithm constants remain visible in source.",
+  "reference": {
+    "judge": "Claude Opus 4.8 (author-reported)",
+    "neighbor_offsets": [
+      1,
+      2
+    ],
+    "anchor_budget": 14,
+    "pair_seed": 42,
+    "prior_lambda": 1,
+    "prior_center": "standardized seed BIA",
+    "pair_bootstrap_refits": 2000
+  },
+  "features": {
+    "flash_model": "gemini-3.1-flash-lite",
+    "flash_temperature": 0,
+    "pro_model": "gemini-3.1-pro-preview",
+    "pro_temperature": 0.3,
+    "pro_samples": 2,
+    "retrieval_embedding": "BAAI/bge-base-en-v1.5",
+    "retrieval_nli": "facebook/bart-large-mnli",
+    "raw_text_embedding": "sentence-transformers/all-MiniLM-L6-v2",
+    "history_window_days": 180,
+    "tier_weights": [
+      0.95,
+      0.78,
+      0.55,
+      0.25,
+      0.1,
+      0.5
+    ],
+    "tier_thresholds": [
+      0.86,
+      0.54,
+      0.5,
+      0.26,
+      0
+    ]
+  },
+  "revised_ridge": {
+    "outer_group_folds": 5,
+    "inner_group_folds": 3,
+    "alphas": [
+      0.1,
+      1,
+      10,
+      50,
+      100,
+      500,
+      1000
+    ],
+    "seed": 20261007,
+    "domain_encoding": "one-hot",
+    "disagreement_scaling": "training partition",
+    "redundant_llm_mean": false,
+    "relevance": "71 - reference rank",
+    "pooled_calibration": "training ECDF"
+  },
+  "heuristics": {
+    "equal": [
+      1,
+      1,
+      1,
+      1
+    ],
+    "hand": [
+      3,
+      1.5,
+      1,
+      0.5
+    ],
+    "simplex_draws": 20000,
+    "simplex_seed": 42
+  },
+  "expert_review": {
+    "primary_pairs": 40,
+    "swap_checks": 8,
+    "repeat_checks": 8,
+    "seed": 20261007
+  },
+  "replay": {
+    "random_permutations_per_job": 1000,
+    "seed": 20261007,
+    "history_days": 180,
+    "attempt_selection": "first stored passed/failed",
+    "cost_model": "serial, order invariant"
+  },
+  "archived_backends": {
+    "ridge_alpha": [
+      0.1,
+      1,
+      10,
+      50
+    ],
+    "cluster_counts": [
+      0,
+      3,
+      5,
+      8
+    ],
+    "ranknet_hidden": [
+      [
+        16
+      ],
+      [
+        32
+      ],
+      [
+        32,
+        16
+      ]
+    ],
+    "ranknet_dropout": [
+      0.2,
+      0.35,
+      0.5
+    ],
+    "ranknet_learning_rate": [
+      0.0005,
+      0.0002
+    ],
+    "ranknet_weight_decay": [
+      0.01,
+      0.03,
+      0.1
+    ],
+    "ranknet_epochs": 150,
+    "ranknet_clusters": [
+      0,
+      2,
+      3
+    ],
+    "lambdamart_leaves": [
+      3,
+      7,
+      15
+    ],
+    "lambdamart_rounds": [
+      100,
+      300,
+      500
+    ],
+    "lambdamart_learning_rates": [
+      0.02,
+      0.03,
+      0.05
+    ],
+    "lambdamart_min_leaf": [
+      3,
+      5
+    ],
+    "lambdamart_l2": [
+      0,
+      1,
+      5
+    ],
+    "lambdamart_seeds": 8
+  },
+  "dependencies": {
+    "huggingface-hub": "0.36.0",
+    "numpy": "2.4.1",
+    "pandas": "2.3.3",
+    "scikit-learn": "1.8.0",
+    "scipy": "1.17.0",
+    "sentence-transformers": "5.3.0"
+  },
+  "grouped_uncertainty": {
+    "bootstrap_samples": 10000,
+    "model_seed": 20260925,
+    "bt_seed": 20260926
+  },
+  "benchmark": {
+    "threads": 1,
+    "warmup_runs": 200,
+    "warm_repetitions": 5000,
+    "cold_repetitions": 20,
+    "warm_scope": [
+      "standardization",
+      "scoring",
+      "sorting"
+    ],
+    "cold_scope": [
+      "bundle_loading",
+      "first_rank"
+    ]
+  }
+}
