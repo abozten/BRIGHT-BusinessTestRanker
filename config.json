@@ -12,7 +12,11 @@
     "prior_lambda": 1,
     "prior_center": "standardized seed BIA",
     "pair_bootstrap_refits": 2000,
-    "judge_identification": "Author-confirmed model identifier; provider request metadata unavailable."
+    "judge_identification": "Author-confirmed model identifier; provider request metadata unavailable.",
+    "judge_input_fields": [
+      "feature_name",
+      "test_scenario"
+    ]
   },
   "features": {
     "flash_model": "gemini-3.1-flash-lite",

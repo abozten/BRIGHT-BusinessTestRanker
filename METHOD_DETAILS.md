@@ -47,9 +47,10 @@ cache joins attributes at scenario level.
 The reference represents consequence conditional on failure. Cases are sorted by
 pre-existing BIA seed score; neighbor comparisons use offsets one and two.
 Deterministic pseudorandom long-range anchors use the seed and anchor budget in
-`config.json`. Presentation sides follow source indices, and the judging
-context contains feature text, scenario, rationale, and numerical seed score.
-Pair sampling and the judging context are seed-informed.
+`config.json`. Presentation sides follow source indices. The judge receives
+feature and scenario descriptions, excluding numerical BIA seed scores and
+developer-written impact rationales. Seed scores guide pair sampling and center
+the Bradley–Terry prior.
 
 For a win-count matrix `W`, let `G = W + W.T`. Bradley–Terry predicts
 `P(i > j) = sigmoid(theta_i - theta_j)`. The Gaussian-prior MAP gradient is
@@ -69,7 +70,7 @@ used for reference construction. Ranker inputs are listed below.
 same strength, verifies the frozen-reference refit, and checks strong connectivity
 of the directed win graph. Strong connectivity is required for a finite
 unregularized Bradley–Terry estimate. Neutral regularization changes the prior
-center while retaining the originally sampled comparisons and judging context.
+center while retaining the sampled comparisons and their verdicts.
 `target_uncertainty.py` resamples comparison rows with replacement, refits with the
 seed-centered prior, and records rank intervals, Top-10 membership, and ordering
 agreement. Its figure is generated in the caller's output directory.
@@ -146,7 +147,7 @@ is Critical=5, High=4, Moderate=3, Low=2, Minimal=1, Unknown=0.
 The no-pointwise-LLM variant retains model-generated taxonomy and retrieval/NLI;
 the strict no-LLM variant retains only history, structural counts, and a
 foundational rule over feature/scenario text. The raw-text baseline embeds only
-feature and scenario with a cached MiniLM model, omitting shared impact rationales,
+feature and scenario with a cached MiniLM model, omitting impact rationales,
 then fits nested Ridge. Embedding loads are local-only.
 
 ## 6. Expert-pair audit
@@ -159,7 +160,12 @@ and deployment context. Separate follow-up checks include order swaps and
 same-order repeats; counts and sampling seed are in `config.json`.
 
 Primary agreement and binary Cohen's kappa use decisive A/B judgments only.
-Consistency maps presentation sides back to case identities. Follow-up checks
+The study records 26/40 exact agreements (65%; binary Cohen's kappa 0.295).
+The authors' qualitative assessment attributes disagreements to fine ordering
+among similarly important actions, such as selection clearing and filtering.
+Binary agreement and kappa treat every reversed preference equally and do not
+measure the size of a consequence difference. Consequence gaps were not rated
+separately. Consistency maps presentation sides back to case identities. Follow-up checks
 are kept outside the primary agreement denominator and assess human consistency.
 The output worksheets, answer records, and scoring key remain outside the repository.
 
@@ -216,7 +222,7 @@ multiplicity.
 
 Fit the neutral-prior BT reference to the same verdicts with zero prior center and
 unchanged regularization. Re-score the fixed seed-trained strategies against its
-ranks, retaining the seed-informed pair sampling and judging context. Expert
+ranks, retaining the seed-informed pair sampling and the same judged comparisons. Expert
 checks map randomized answers back to case identities, using primary
 pairs. For cross-fold comparisons, learned and fold-scaled heuristic scores use
 training-ECDF calibration; pointwise signals use their common numeric scales.
@@ -226,7 +232,7 @@ it is a nominal binomial interval since sampled pairs share cases.
 
 `scenario_only_control.py` uses only scenario text, the scoring rubrics,
 and the configured model identifiers, temperatures, and sample counts. It removes
-feature names as well as shared rationale. Pro uses low thinking, a different
+feature names as well as impact rationale. Pro uses low thinking, a different
 setting from the context-rich scores. The comparison measures sensitivity to
 input context and runtime settings. Response,
 usage, and model metadata are retained privately. Model settings and seeds are
