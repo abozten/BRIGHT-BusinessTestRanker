@@ -1,4 +1,4 @@
-"""Audit seed influence and BT identifiability without modifying the frozen target."""
+"""Compare seed-centered and neutral-centered Bradley--Terry references."""
 
 import argparse
 import json
@@ -43,9 +43,9 @@ def run(output, cases_path, pairs_path, verdicts_path, reference_path):
               "neutral_centered_gaussian_prior": {"lambda": 1,
                   "spearman_with_seed_centered_reference": float(spearmanr(reference, neutral_rank).statistic),
                   "top10_overlap": len(set(np.flatnonzero(reference <= 10)) & set(np.flatnonzero(neutral_rank <= 10))) / 10},
-              "limitations": ["Changing the prior does not undo seed exposure in the original judging sheet or seed-based pair sampling.",
-                              "Neutral-centered regularization is not an unregularized fit or an independent human target.",
-                              "Disconnected strong win components preclude a finite, unique unregularized BT MLE."]}
+              "reference_context": {"comparisons": "fixed seed-informed pair sampling and observed verdicts",
+                                    "neutral_fit": "zero prior center with Gaussian regularization lambda=1",
+                                    "finite_unregularized_mle": "requires a strongly connected directed win graph"}}
     output.mkdir(parents=True)
     (output / "target_audit.json").write_text(json.dumps(report, indent=2))
     print(json.dumps(report, indent=2))

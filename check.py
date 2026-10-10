@@ -6,12 +6,31 @@ import numpy as np
 import pandas as pd
 
 from analysis_helpers import calibrate_scores_by_train_ecdf, fit_bradley_terry_map
-from revision_metrics import design, metrics, run
+from evaluation import design, metrics, run
 from expert_review import summarize
 from ci_replay import failure_metrics, collect_jobs
+from uncertainty_controls import correlations, feature_bootstrap, pair_agreement, wilson
+from scenario_only_control import parse_score
 
 
 def main():
+    assert parse_score([{"text": '{"bia_score": 75}'}]) == 75
+    for invalid in ['{"bia_score": true}', '{"bia_score": 101}', '{"bia_score": 1.5}']:
+        try:
+            parse_score(invalid)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError("Invalid provider score was accepted")
+    np.testing.assert_allclose(correlations([1, 2, 3], [[3, 7], [2, 7], [1, 7]]), [-1, 0])
+    assert pair_agreement(np.array([1., 1., 3.]), [(0, 1, 0), (0, 2, 2)]) == {
+        "correct": 1, "ties": 1, "n": 2, "agreement_half_credit_ties": .75}
+    np.testing.assert_allclose(wilson(26, 40), [.49505881, .77865471], atol=1e-6)
+    frame = pd.DataFrame({"feature_name": ["a", "a", "b", "c", "c", "d"]})
+    scores = np.column_stack([np.arange(6), np.arange(6)])
+    draws = feature_bootstrap(frame, np.arange(6), scores,
+                              [(None, np.arange(3)), (None, np.arange(3, 6))], 20, 42)
+    np.testing.assert_array_equal(draws[:, 0] - draws[:, 1], 0)
     train = pd.DataFrame({"llm_bia_score": [10, 20, 40], "pro_bia_score": [12, 18, 50],
                           "domain": ["A", "A", "B"]})
     heldout = pd.DataFrame({"llm_bia_score": [999], "pro_bia_score": [-999], "domain": ["UNSEEN"]})

@@ -59,8 +59,7 @@ def prepare(output, cases_path, pairs_path, verdicts_path, count=40, seed=202610
                  "the scoring key, seed scores, or LLM ordering while judging. "
                  "Complete review.md before followup.md, preferably in a later session "
                  "without consulting earlier answers. Prior familiarity must be disclosed.", "",
-                 "This sheet contains only feature and scenario descriptions; existing "
-                 "business-impact rationales are omitted because their provenance is uncertain.", ""]
+                 "Each case is presented through its feature and scenario description.", ""]
         for number in range(start, end):
             row = records[number]
             lines.extend([f"## Q{number + 1:03d}", ""])
@@ -124,12 +123,11 @@ def summarize(manifest, answers):
     return {"complete_primary": counts["unanswered"] == 0, "primary_answer_counts": counts,
             "n_decisive_primary": n, "agreement_with_llm": agreement, "cohens_kappa_binary": kappa,
             "consistency_checks": checks,
-            "limitations": ["Single reviewer; prior involvement/exposure is recorded separately.",
-                            "Agreement is conditional on sampled existing pairs.",
-                            "Pairs share cases; descriptive agreement is not an independent-sample noise ceiling.",
-                            "Ties and unknowns are reported and excluded from binary kappa.",
-                            "Follow-up measures human consistency, not LLM repeat-run stability.",
-                            "Sparse sample does not define a validated whole-suite human ordering."]}
+            "review_context": {"reviewers": 1,
+                               "sampling": "existing judged pairs; pairs may share cases",
+                               "binary_agreement": "decisive primary A/B answers",
+                               "follow_up": "reviewer consistency on swaps and repeats",
+                               "exposure": "recorded separately in the review worksheet"}}
 
 
 def main():

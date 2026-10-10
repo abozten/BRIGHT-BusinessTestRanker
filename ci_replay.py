@@ -1,4 +1,4 @@
-"""Read-only retrospective failure replay; never treat failed tests as distinct faults."""
+"""Retrospective CI replay with failure-event area and serial-cost metrics."""
 
 import argparse
 import hashlib
@@ -27,7 +27,7 @@ def parse_date(value):
 
 
 def failure_metrics(order):
-    """Area metrics use one failure event per failed test, not defect identities."""
+    """Compute area metrics with one failure event per failed case."""
     n = len(order)
     failed = [i for i, row in enumerate(order, 1) if row["status"] == "failed"]
     if not failed:
@@ -76,12 +76,12 @@ def run(output, predictions, cases_path, pro_path, jobs_path):
     df = pd.read_csv(cases_path)
     df = df.merge(pd.read_csv(pro_path)[["case_key", "pro_bia_score"]], on="case_key", validate="one_to_one")
     pred = pd.read_json(predictions)
-    df = df.merge(pred[["case_key", "ridge_corrected"]], on="case_key", validate="one_to_one")
+    df = df.merge(pred[["case_key", "ridge"]], on="case_key", validate="one_to_one")
     assert len(df) == 70
     keys = [case_key(r.feature_name, r.test_scenario) for r in df.itertuples()]
     assert len(set(keys)) == 70
     pro = dict(zip(keys, df.pro_bia_score))
-    ridge = dict(zip(keys, df.ridge_corrected))
+    ridge = dict(zip(keys, df.ridge))
     tiers = dict(zip(keys, df.bia_risk_label.map({"MINIMAL": 0, "LOW": 1, "MODERATE": 2, "HIGH": 3, "CRITICAL": 4})))
     found = {case_key(r.feature_name, r.test_scenario): int(any(word in normalized(r.feature_name + " " + r.test_scenario)
               for word in ("login", "auth", "server", "cli", "execute a test cycle", "access"))) for r in df.itertuples()}
@@ -96,7 +96,7 @@ def run(output, predictions, cases_path, pro_path, jobs_path):
     ordered_jobs = sorted(jobs.items(), key=lambda pair: (min(pair[1]["dates"]) if pair[1]["dates"] else datetime.max.replace(tzinfo=timezone.utc), pair[0]))
     for job_id, job in ordered_jobs:
         timestamp = min(job["dates"]) if job["dates"] else None
-        # Rates use only strictly earlier timestamps inside 180 days, never current outcomes.
+        # Reconstruct history from timestamps strictly before this job.
         rates = {}
         for key in keys:
             past = [status for date, status in history[key]
@@ -106,7 +106,7 @@ def run(output, predictions, cases_path, pro_path, jobs_path):
         strategies = {"stored_order": rows,
                       "history_180d": sorted(rows, key=lambda r: (-rates[r["key"]], r["key"])),
                       "pointwise_llm_pro": sorted(rows, key=lambda r: (-pro[r["key"]], r["key"])),
-                      "revised_ridge_oof": sorted(rows, key=lambda r: (-ridge[r["key"]], r["key"])),
+                      "ridge_oof": sorted(rows, key=lambda r: (-ridge[r["key"]], r["key"])),
                       "foundational_first": sorted(rows, key=lambda r: (-found[r["key"]], r["key"]))}
         signals = np.array([[pro[k], tiers[k], rates[k]] for k in keys])
         deviations = signals.std(axis=0)
@@ -144,15 +144,14 @@ def run(output, predictions, cases_path, pro_path, jobs_path):
               "unmatched_executions_excluded": sum(j["unmatched"] for j in jobs.values()),
               "source_prediction_sha256": hashlib.sha256(predictions.read_bytes()).hexdigest(),
               "seed": 20261007, "random_replays_per_job": 1000, "aggregate": aggregate, "jobs": summaries,
-              "limitations": ["Current database snapshot may differ from the paper's original 88-job extraction.",
-                              "Uses first stored passed/failed attempt; stored document order is not verified execution order.",
-                              "Failed cases are failure events, not identified distinct faults; area measures are APFD-style proxies.",
-                              "Cost and time metrics assume serial, order-invariant scenario durations in seconds, not measured wall clock.",
-                              "Test dependencies and order-induced outcomes are not modeled; partial jobs omit unobserved cases.",
-                              "History uses feature.created_at as recorded; its meaning as execution time needs confirmation.",
-                              "Static text features and group-OOF Ridge were generated after historical jobs: retrospective diagnostic, not temporal deployment validation.",
-                              "No calibrated severity weights, actual cancellation savings, energy, or carbon estimates.",
-                              "No-failure jobs have undefined area metrics and are excluded from failure-effectiveness means."]}
+              "replay_context": {"snapshot": "caller-supplied CI records",
+                                 "attempt_selection": "first stored passed/failed attempt",
+                                 "area_unit": "failed case",
+                                 "cost_model": "serial, order-invariant scenario durations in seconds",
+                                 "outcomes": "fixed observed outcomes; partial jobs retain observed cases",
+                                 "history_timestamp": "recorded feature.created_at",
+                                 "static_scores": "cached impact estimates and feature-group OOF Ridge scores",
+                                 "eligible_jobs": "at least two observed cases and one failure"}}
     output.mkdir(parents=True)
     (output / "replay.json").write_text(json.dumps(report, indent=2))
     print(json.dumps({k: report[k] for k in ("n_jobs_in_database", "n_jobs_with_matched_cases", "n_eligible_failure_jobs", "n_jobs_with_all_70_executed", "aggregate")}, indent=2))

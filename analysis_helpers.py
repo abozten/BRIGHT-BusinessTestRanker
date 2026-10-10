@@ -16,8 +16,6 @@ def add_foundational_feature(df: pd.DataFrame) -> pd.DataFrame:
         df["feature_name"].fillna("").str.lower()
         + " "
         + df["test_scenario"].fillna("").str.lower()
-        + " "
-        + df["rationale"].fillna("").str.lower()
     )
     foundation_terms = [
         "login",

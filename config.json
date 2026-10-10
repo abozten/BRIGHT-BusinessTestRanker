@@ -2,7 +2,7 @@
   "python": ">=3.13,<3.14",
   "scope": "Method settings; algorithm constants remain visible in source.",
   "reference": {
-    "judge": "Claude Opus 4.8 (author-reported)",
+    "judge": "claude-opus-4.8",
     "neighbor_offsets": [
       1,
       2
@@ -11,7 +11,8 @@
     "pair_seed": 42,
     "prior_lambda": 1,
     "prior_center": "standardized seed BIA",
-    "pair_bootstrap_refits": 2000
+    "pair_bootstrap_refits": 2000,
+    "judge_identification": "Author-confirmed model identifier; provider request metadata unavailable."
   },
   "features": {
     "flash_model": "gemini-3.1-flash-lite",
@@ -39,7 +40,7 @@
       0
     ]
   },
-  "revised_ridge": {
+  "ridge": {
     "outer_group_folds": 5,
     "inner_group_folds": 3,
     "alphas": [
@@ -72,7 +73,17 @@
       0.5
     ],
     "simplex_draws": 20000,
-    "simplex_seed": 42
+    "simplex_seed": 42,
+    "evaluation_scaling": "training partition",
+    "weight_sensitivity_scaling": "whole suite, descriptive",
+    "weight_sensitivity_tiers": {
+      "CRITICAL": 5,
+      "HIGH": 4,
+      "MODERATE": 3,
+      "LOW": 2,
+      "MINIMAL": 1,
+      "UNKNOWN": 0
+    }
   },
   "expert_review": {
     "primary_pairs": 40,
@@ -87,77 +98,6 @@
     "attempt_selection": "first stored passed/failed",
     "cost_model": "serial, order invariant"
   },
-  "archived_backends": {
-    "ridge_alpha": [
-      0.1,
-      1,
-      10,
-      50
-    ],
-    "cluster_counts": [
-      0,
-      3,
-      5,
-      8
-    ],
-    "ranknet_hidden": [
-      [
-        16
-      ],
-      [
-        32
-      ],
-      [
-        32,
-        16
-      ]
-    ],
-    "ranknet_dropout": [
-      0.2,
-      0.35,
-      0.5
-    ],
-    "ranknet_learning_rate": [
-      0.0005,
-      0.0002
-    ],
-    "ranknet_weight_decay": [
-      0.01,
-      0.03,
-      0.1
-    ],
-    "ranknet_epochs": 150,
-    "ranknet_clusters": [
-      0,
-      2,
-      3
-    ],
-    "lambdamart_leaves": [
-      3,
-      7,
-      15
-    ],
-    "lambdamart_rounds": [
-      100,
-      300,
-      500
-    ],
-    "lambdamart_learning_rates": [
-      0.02,
-      0.03,
-      0.05
-    ],
-    "lambdamart_min_leaf": [
-      3,
-      5
-    ],
-    "lambdamart_l2": [
-      0,
-      1,
-      5
-    ],
-    "lambdamart_seeds": 8
-  },
   "dependencies": {
     "huggingface-hub": "0.36.0",
     "numpy": "2.4.1",
@@ -166,10 +106,9 @@
     "scipy": "1.17.0",
     "sentence-transformers": "5.3.0"
   },
-  "grouped_uncertainty": {
-    "bootstrap_samples": 10000,
-    "model_seed": 20260925,
-    "bt_seed": 20260926
+  "target_uncertainty": {
+    "bootstrap_refits": 2000,
+    "seed": 20260926
   },
   "benchmark": {
     "threads": 1,
@@ -185,5 +124,24 @@
       "bundle_loading",
       "first_rank"
     ]
+  },
+  "uncertainty_controls": {
+    "bootstrap_draws": 10000,
+    "seed": 20261010,
+    "feature_resampling": "Feature blocks within fixed outer folds, paired across strategies",
+    "conditioning": "Frozen fitted models and selected hyperparameters; no bootstrap retuning",
+    "job_resampling": "Whole eligible jobs, paired across strategies",
+    "alternative_references": "Re-score fixed seed-trained predictions; no retraining",
+    "expert_ties": "Half credit",
+    "agreement_interval": "Wilson 95%; nominal binomial, pairs share cases",
+    "scenario_only_input_fields": [
+      "test_scenario"
+    ],
+    "scenario_only_feature_names": false,
+    "scenario_only_rationales": false,
+    "scenario_only_flash_thinking_budget": 0,
+    "scenario_only_pro_thinking_level": "low",
+    "scenario_only_pro_thinking_budget": null,
+    "pro_thinking_setting": "low"
   }
 }

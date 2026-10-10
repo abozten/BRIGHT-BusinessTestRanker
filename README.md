@@ -1,24 +1,21 @@
 # BRIGHT paper code companion
 
-Methodological source for *Business-Consequence-Aware Regression Test Prioritization:
-An Industrial Case Study*.
+Code and technical details for *Business-Consequence-Aware Regression Test
+Prioritization: An Industrial Case Study*.
 
-This standalone package contains revised Ridge evaluation and ablations,
-Bradley–Terry seed sensitivity, expert-pair agreement, retrospective failure-event
-replay, experiment settings, and exact feature-scoring prompts. It contains **no
-industrial test cases or project data**: no descriptions, feature caches, seed
-assessments, judgments, reviewer answers, job records, case-level predictions,
-model bundles, or paper figures. The original RankNet/LambdaMART settings are
-listed in `config.json`; their training runners are outside this package.
+Companion repository: [BRIGHT-BusinessTestRanker](https://github.com/abozten/BRIGHT-BusinessTestRanker).
 
-## Electronic appendix
+The package implements nested feature-group Ridge evaluation, matched baselines
+and ablations, paired bootstrap intervals, Bradley–Terry reference sensitivity,
+expert-pair agreement, retrospective CI replay, and scenario-only impact scoring.
+Industrial inputs and fitted outputs remain private. Supply your own inputs to
+run the analyses.
 
-[METHOD_DETAILS.md](METHOD_DETAILS.md) supplies the detailed feature definitions,
-backend input/encoding table, ranking losses, evaluation conventions, expert-review
-protocol, replay mechanics, and timing boundaries moved out of the paper.
-[config.json](config.json) lists exact settings and grids;
-[prompts.md](prompts.md) preserves both exact scoring rubrics and their input template.
-These supplements contain methodological details only, without industrial case data.
+[METHOD_DETAILS.md](METHOD_DETAILS.md) documents the algorithms, feature encodings,
+metrics, review protocol, replay rules, and timing boundaries.
+[config.json](config.json) records experiment settings; runners define their
+constants in source. [prompts.md](prompts.md) contains the scoring rubrics and
+input templates. [provenance.json](provenance.json) records source provenance.
 
 ## Setup
 
@@ -30,42 +27,40 @@ uv pip install -r requirements.txt
 .venv/bin/python check.py
 ```
 
-`config.json` documents the experiment settings; constants used by each runner
-are visible in its source. The file is a configuration record, not a dynamic
-configuration loader. `provenance.json` records source-code checksums and packaging
-changes. No hosted inference or database connection is made by these runners.
-The raw-text baseline requires a previously cached MiniLM model and uses
-`local_files_only=True`; obtain the model separately before running that analysis.
+The evaluation baseline loads a cached `sentence-transformers/all-MiniLM-L6-v2`
+model with `local_files_only=True`; prepare the cache before running it.
+`scenario_only_control.py` calls Gemini and reads `GEMINI_API_KEY` from the
+environment. The other analyses use local inputs.
 
 ## Inputs and commands
 
-All inputs are supplied privately by the caller. Paths below are placeholders for
-files kept **outside this repository**; no study input or sample case dataset is
-bundled. Existing output destinations are preserved rather than overwritten.
+Commands run from this directory. Input and output paths are placeholders for
+locations outside the repository. Each runner requires a new output destination.
 
-### Revised matched evaluation
+### Nested evaluation
 
 The cases CSV requires `case_key`, `gt_rank`, `feature_name`,
 `mapped_feature_name`, `test_scenario`, `history_fail_rate`, `semantic_score`,
 `bia_risk_label`, `impact_scope`, and `domain`. Flash and Pro CSVs require
-`case_key` with `llm_bia_score` and `pro_bia_score`, respectively. The runner
-implements the paper's 70-case, 5-outer/3-inner-fold protocol and global relevance
-`71 - gt_rank`. It writes metrics, calibrated OOF scores, and a LaTeX table to
-an explicitly supplied private output directory.
+`case_key` with `llm_bia_score` and `pro_bia_score`, respectively.
+
+`evaluation.py` implements the paper's 70-case protocol: five outer and three
+inner feature-group folds, training-partition preprocessing, and global linear
+relevance `71 - gt_rank`. It writes `metrics.json`, `oof_predictions.json`, and
+`matched_baselines.tex`. The main model is named `ridge` in both JSON outputs.
 
 ```sh
-.venv/bin/python revision_metrics.py --cases /private-input/cases.csv \
+.venv/bin/python evaluation.py --cases /private-input/cases.csv \
   --flash /private-input/flash.csv --pro /private-input/pro.csv \
-  --output /private-output/revised
+  --output /private-output/evaluation
 ```
 
 ### Bradley–Terry sensitivity
 
-Cases require `case_key` and `bia_score` in the original positional order.
-Pairs require `pair_id,i,j`; verdicts require `pair_id,winner` with a zero-based
-case index. The reference CSV requires `case_key,gt_rank`. The audit verifies the
-seed-centered refit and compares neutral-centered regularization at the same
-prior strength.
+Cases require `case_key` and `bia_score` in source-row order. Pairs require
+`pair_id,i,j`; verdicts require `pair_id,winner`, with zero-based case indices.
+The reference CSV requires `case_key,gt_rank`. The audit verifies the
+seed-centered refit and compares a neutral prior center at the same strength.
 
 ```sh
 .venv/bin/python target_audit.py --cases /private-input/seed-cases.csv \
@@ -73,12 +68,25 @@ prior strength.
   --reference /private-input/reference.csv --output /private-output/target-audit
 ```
 
+### Reference uncertainty
+
+`target_uncertainty.py` resamples judged pairs for 2,000 Bradley–Terry refits.
+It uses the same cases, pairs, verdicts, and reference schemas as the audit.
+Cases additionally require `mapped_feature_name` and `test_scenario` for the
+rank-interval CSV and LaTeX figure. The summary is `target_uncertainty.json`.
+
+```sh
+.venv/bin/python target_uncertainty.py --cases /private-input/seed-cases.csv \
+  --pairs /private-input/pairs.csv --verdicts /private-input/verdicts.csv \
+  --reference /private-input/reference.csv --output /private-output/target-uncertainty
+```
+
 ### Expert review
 
-The same pairs/verdicts schema is used. Review cases additionally require
-`mapped_feature_name` and `test_scenario`. Preparation writes private review
-worksheets and a scoring key; scoring reads completed worksheets. The command
-randomizes sides and includes order-swapped and same-order repeated checks.
+Review cases require `case_key`, `mapped_feature_name`, and `test_scenario` in
+source-row order. Use the pair/verdict schemas above. Preparation samples 40
+pairs, randomizes sides, and adds eight order-swapped and eight same-order checks.
+Scoring reads the completed worksheets and their saved scoring key.
 
 ```sh
 .venv/bin/python expert_review.py prepare --cases /private-input/seed-cases.csv \
@@ -89,52 +97,82 @@ randomizes sides and includes order-swapped and same-order repeated checks.
 
 ### Retrospective replay
 
-Supply the cases and Pro CSVs, the revised OOF predictions JSON, and a private
-JSON array of CI documents **in first-stored-attempt order**. Each document has
-`job_id` and `processed_data`; each feature record has `feature_name`,
-`created_at`, and `scenarios`; each scenario has `scenario_name`,
-`scenario_status`, and `scenario_execution_time` in seconds. Normalize aliases
-consistently in private inputs before running; project-specific aliases are excluded
-from this package. Replay uses prior recorded timestamps for failure history and
-serial, order-invariant scenario costs. Area metrics count failed cases, not
-identified distinct defects.
+Supply the cases and Pro CSVs, the evaluation's OOF JSON, and a JSON array of CI
+records in first-stored-attempt order. Each record has `job_id` and
+`processed_data`; each feature has `feature_name`, `created_at`, and `scenarios`;
+each scenario has `scenario_name`, `scenario_status`, and
+`scenario_execution_time` in seconds. Normalize feature/scenario aliases
+consistently before running.
+
+Replay reconstructs 180-day history from earlier recorded timestamps. Area
+metrics count failed cases, and time measures assume serial, order-invariant
+costs. The Ridge strategy is named `ridge_oof` in `replay.json`.
 
 ```sh
 .venv/bin/python ci_replay.py --cases /private-input/cases.csv \
-  --pro /private-input/pro.csv --predictions /private-output/revised/oof_predictions.json \
+  --pro /private-input/pro.csv --predictions /private-output/evaluation/oof_predictions.json \
   --jobs /private-input/jobs.json --output /private-output/replay
 ```
 
-### Bootstrap uncertainty and heuristic weights
+### Paired uncertainty and alternative references
 
-`grouped_uncertainty.py` reproduces the archived paired feature-group comparison
-and pair-bootstrap rank intervals. Its archived predictions CSV requires
-`feature_name`, `gt_rank`, `bia_risk_label`, `is_foundational`, `llm_bia_score`,
-`pro_bia_score`, `history_fail_rate`, and `oof_pred_score`. Cases additionally
-require `mapped_feature_name` and `test_scenario` for the privately generated
-uncertainty figure. The generated figure and case-level rank intervals remain
-in the external output directory. This archived comparison uses its original
-whole-suite heuristic scaling, distinct from the revised fold-restricted analysis.
+`uncertainty_controls.py` reconstructs raw fold scores at the saved selected
+alphas and verifies them against the evaluation metrics and calibrated OOF
+scores. It performs 10,000 paired feature-group draws within fixed outer folds
+and paired whole-job replay draws. It evaluates the same fitted predictions
+against neutral-prior ranks and expert-labelled pairs. Intervals condition on
+the saved fits and hyperparameters. Cross-fold expert comparisons use
+training-percentile scores for learned models and fold-scaled heuristics;
+score ties receive half credit.
 
 ```sh
-.venv/bin/python grouped_uncertainty.py --predictions /private-input/archived-predictions.csv \
-  --cases /private-input/seed-cases.csv --pairs /private-input/pairs.csv \
-  --verdicts /private-input/verdicts.csv --reference /private-input/reference.csv \
-  --output /private-output/bootstrap
-.venv/bin/python weight_sensitivity.py --features /private-input/archived-predictions.csv \
+.venv/bin/python uncertainty_controls.py --cases /private-input/cases.csv \
+  --seed-cases /private-input/seed-cases.csv --flash /private-input/flash.csv \
+  --pro /private-input/pro.csv --metrics /private-output/evaluation/metrics.json \
+  --oof /private-output/evaluation/oof_predictions.json --pairs /private-input/pairs.csv \
+  --verdicts /private-input/verdicts.csv \
+  --expert-key /private-output/review/scoring_key.DO_NOT_OPEN_BEFORE_REVIEW.json \
+  --expert-review /private-output/review/review.md \
+  --replay /private-output/replay/replay.json \
+  --scenario-scores /private-output/scenario-only --output /private-output/controls
+```
+
+The optional `--scenario-scores` directory contains `flash_scores.csv` and
+`pro_scores.csv`, with `case_key` and `flash_scenario_score` or
+`pro_scenario_score`. Seed cases preserve source-row indices used in the pair
+and expert records and require complete `bia_score` values. `controls.json`
+groups the primary comparison results under `evaluation`.
+
+### Heuristic weight sensitivity
+
+`weight_sensitivity.py` reads `gt_rank`, `pro_bia_score`, `bia_risk_label`,
+`history_fail_rate`, and `is_foundational`. It samples 20,000 non-negative weight
+vectors uniformly from the simplex. This descriptive whole-suite analysis uses
+whole-suite standardization and the supplied foundational indicator. Its tier
+mapping is recorded in `config.json`. The matched evaluation above uses
+training-partition standardization and a feature/scenario text rule.
+
+```sh
+.venv/bin/python weight_sensitivity.py --features /private-input/weight-features.csv \
   --output /private-output/weight-sensitivity.json
 ```
 
-Weight sensitivity reads `gt_rank`, `pro_bia_score`, `bia_risk_label`,
-`history_fail_rate`, and `is_foundational`. It retains the archived whole-suite
-standardization and reports descriptive correlations over 20,000 weight vectors.
+### Scenario-only scoring
 
-## Publication contents
+The scorer sends `test_scenario` text to the configured Gemini models and stores
+responses and usage metadata in the output directory. It uses the rubrics in
+`prompts.md`, with one Flash sample and two Pro samples. Pro uses low thinking.
+This comparison varies both the input context and Pro's thinking setting.
 
-The `.gitignore` permits only the named source, configuration, prompt, provenance,
-and documentation files. Keep generated analyses and input data outside the
-repository. Publish this folder as the root of a separate repository, rather than
-publishing the backend or research workspace. A repository URL and distribution
-license have not yet been assigned. Running the code on the confidential study
-inputs is required to reproduce its empirical numbers; the source alone documents
-and exposes the methods for use with independently supplied inputs.
+```sh
+.venv/bin/python scenario_only_control.py --cases /private-input/cases.csv \
+  --output /private-output/scenario-only
+```
+
+## Package contents
+
+Use this directory as the companion repository root. The `.gitignore` lists the
+source, configuration, prompt, provenance, and documentation files included in
+the package. Keep datasets, review records, fitted models, and generated outputs
+outside the repository. Reproducing the paper's numerical results requires the
+study inputs. A distribution license has not yet been assigned.

@@ -1,4 +1,4 @@
-# Archived scoring prompts
+# Impact scoring prompts
 
 ## Flash Lite rubric
 
@@ -39,3 +39,19 @@ Context: {rationale}
 
 JSON:
 ```
+
+## Scenario-only sensitivity control
+
+Use each unchanged rubric above followed by only:
+
+```text
+Test scenario: {scenario}
+
+JSON:
+```
+
+Feature names, rationale, seed scores, reference ranks, and labels are omitted.
+Flash uses one sample at temperature 0; Pro averages two at temperature 0.3.
+The scenario-only Pro control uses `thinking_level="low"`, without a
+`thinking_budget`. Its input context and thinking setting differ from the
+context-rich scorer, so the comparison measures their combined sensitivity.

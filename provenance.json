@@ -1,26 +1,32 @@
 {
   "source_code_sha256": {
-    "bright_revision_metrics.py": "66b4290b02ec14fa03cba31719f8cb7b5342bc43260afaff6533aeddc9dda660",
-    "bright_target_audit.py": "3f4050a4b8da0f855c297ae08673824af787e96203cb1f55130556d9ac47dafd",
-    "bright_expert_review.py": "e27bad14596a0813b3dcab673fe4a7cc9ef17928a046824f08998d1d6f666a68",
-    "bright_ci_replay.py": "8dc4ea36a9161cf6ed8ab0904526723de5ae979501a2f08c7dbd6f044962acc9",
-    "build_june_v2_labels.py": "a1c46f25c228dcb572ab916821b83544403e36fd2a6ddaad844c3d53adc205f6",
-    "enhanced_pointwise_ltr_ridge.py": "47412655ba9a2dc093a83f70893936051b2008baf95cde8c23b68dba17b6d0b8",
-    "grouped_uncertainty.py": "c00f4661b269cea51587cde6d9db944d417321ca8ed2a486ba868b039cf30741",
-    "weight_sensitivity.py": "d988ab41dbda0e1d76ca19f1dbd70b03c27461e1d809df259c31bcadcaaeb800"
+    "target_uncertainty.py": "c00f4661b269cea51587cde6d9db944d417321ca8ed2a486ba868b039cf30741",
+    "weight_sensitivity.py": "d988ab41dbda0e1d76ca19f1dbd70b03c27461e1d809df259c31bcadcaaeb800",
+    "evaluation.py": "66b4290b02ec14fa03cba31719f8cb7b5342bc43260afaff6533aeddc9dda660",
+    "target_audit.py": "3f4050a4b8da0f855c297ae08673824af787e96203cb1f55130556d9ac47dafd",
+    "expert_review.py": "e27bad14596a0813b3dcab673fe4a7cc9ef17928a046824f08998d1d6f666a68",
+    "ci_replay.py": "8dc4ea36a9161cf6ed8ab0904526723de5ae979501a2f08c7dbd6f044962acc9",
+    "reference_construction": "a1c46f25c228dcb572ab916821b83544403e36fd2a6ddaad844c3d53adc205f6",
+    "ridge_helpers": "47412655ba9a2dc093a83f70893936051b2008baf95cde8c23b68dba17b6d0b8"
   },
   "adaptations": [
-    "Explicit user-supplied input paths replace private repository defaults.",
-    "Numerical Ridge, BT, agreement, and replay computations are retained.",
-    "Only required Ridge helpers and BT fitter are extracted.",
-    "Replay accepts ordered JSON records instead of opening a production database.",
-    "Project-specific case alias mapping is omitted; callers normalize their own identifiers."
+    "Inputs and outputs use caller-supplied paths.",
+    "Ridge evaluation uses the paper's nested feature-group protocol and training-partition transforms.",
+    "Model-comparison uncertainty and pair-bootstrap reference uncertainty have separate runners.",
+    "Replay reads ordered JSON records; callers normalize project-specific aliases.",
+    "Public module names, result keys, and method documentation follow the paper."
   ],
   "included_data": "none",
-  "archived_backends": "Configuration grids documented; original RankNet/LambdaMART runners are outside this package.",
   "supplementary_documents": {
-    "METHOD_DETAILS.md": "Feature construction, backend map, losses, evaluation, audit, replay, timing",
+    "METHOD_DETAILS.md": "Feature construction, Ridge inputs and objective, evaluation, audit, replay, timing",
     "config.json": "Exact method and experiment settings",
     "prompts.md": "Verbatim pointwise scoring rubrics and input template"
+  },
+  "source_hash_scope": "Checksums of source implementations before standalone adaptation; keys identify their public modules or roles.",
+  "analyses": {
+    "evaluation.py": "Nested Ridge, matched baselines, ablations, and calibrated OOF scores.",
+    "uncertainty_controls.py": "Paired uncertainty, seed baseline, neutral-prior and expert-pair scoring.",
+    "target_uncertainty.py": "Pair-bootstrap Bradley–Terry rank intervals.",
+    "scenario_only_control.py": "Gemini scenario scoring with rubrics from prompts.md and an environment-supplied credential."
   }
 }
