@@ -1,7 +1,7 @@
 # Methodological supplement
 
-This document serves as the paper's electronic appendix. It records algorithms,
-feature definitions, evaluation conventions, and implementation choices.
+This document records the algorithms, feature definitions, evaluation conventions,
+and implementation choices used in the paper.
 `config.json` contains exact grids, model identifiers, temperatures, and seeds;
 `prompts.md` contains the scoring rubrics and input template;
 `README.md` provides input schemas and commands. Industrial inputs, fitted models,

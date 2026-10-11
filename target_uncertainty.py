@@ -28,9 +28,6 @@ def ci(values):
 
 
 def plot_bt_uncertainty(item, output):
-    def tex(value):
-        return str(value).replace("&", r"\&").replace("%", r"\%").replace("_", r"\_")
-
     top = item.sort_values("rank").head(15)
     lines = [r"\begin{tikzpicture}[x=1mm,y=1mm,font=\scriptsize]",
              r"\draw[gray!45] (47,3) -- (47,-73);",
@@ -40,7 +37,8 @@ def plot_bt_uncertainty(item, output):
     for row, case in enumerate(top.itertuples()):
         y = -5 * row
         lo, rank, hi = 46 + 1.4 * case.rank_lo, 46 + 1.4 * case.rank, 46 + 1.4 * case.rank_hi
-        label = tex(f"{case.rank}. {case.mapped_feature_name[:38]}")
+        # case text renamed
+        label = f"Scenario {case.rank:02d}"
         lines.extend([
             rf"\node[anchor=east] at (44,{y}) {{{label}}};",
             rf"\draw[gray!70] ({lo:.1f},{y}) -- ({hi:.1f},{y});",
